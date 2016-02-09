@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 # XboxRC
-# Requirements: Linux
-# sudo modprobe xpad (kernel support for xbox360/xboxOne)
-# 
+# Requirements: Linux with xpad kernel module support (sudo modprobe xpad)
 
 import sys, os
 import struct, array
