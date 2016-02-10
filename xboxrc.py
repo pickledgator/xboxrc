@@ -103,24 +103,32 @@ class XboxRC():
 		self.axis_map = []
 		self.button_map = []
 
-		if self.useQuack:
-			self.capnp = __import__('capnp')
-			self.quack = __import__('quack')
-			self.xboxrc_capnp = __import__('xboxrc_capnp')
-			self.ctx = self.quack.Node("xboxrc")
-			self.pub = self.quack.Publisher(self.ctx, "XBOX/RAW", [])
-			self.logger = self.ctx.logger
-
 		self.thread = threading.Thread(name='xpad', target=self.run)
 		self.thread.setDaemon(True)
 		self.thread.start()
 
-		#self.openXboxDevice()
+		self.openXboxDevice()
 		
+	def detectXboxDevices(self):
+		# Iterate over the joystick devices.
+		numDevices = 0
+		try:
+			for fn in os.listdir('/dev/input'):
+				if fn.startswith('js'):
+					numDevices = numDevices + 1
+		except:
+			pass
+
+		self.logger.info("Searching for devices: Found {} devices".format(numDevices))
+		return numDevices
+
 	def openXboxDevice(self):
+		if not self.devicesAvailable:
+			return
+
 		# Open the joystick device.
 		fn = '/dev/input/js0'
-		self.logger.info("Opening {}...".format(fn))
+		self.logger.info("Opening device: {}...".format(fn))
 		self.jsdev = open(fn, 'rb')
 
 		# Get the device name.
@@ -159,20 +167,6 @@ class XboxRC():
 		self.logger.info("{} axes found: {}".format(num_axes, ",".join(axis_map)))
 		self.logger.info("{} buttons found: {}".format(num_buttons, ",".join(button_map)))
 
-
-	def detectXboxDevices(self):
-		# Iterate over the joystick devices.
-		numDevices = 0
-		try:
-			for fn in os.listdir('/dev/input'):
-				if fn.startswith('js'):
-					numDevices = numDevices + 1
-		except:
-			pass
-
-		self.logger.info("Searching for devices: Found {} devices".format(numDevices))
-		return numDevices
-
 	def run(self):
 		if not self.devicesAvailable:
 			return
@@ -210,17 +204,6 @@ class XboxRC():
 						fvalue = value / 32767.0
 						axis_states[axis] = fvalue
 						self.logger.info("{}: {:.3f}".format(axis, fvalue))
-
-				if self.useQuack:
-					self.sendEvent(eventType, eventField, eventValue)
-
-	def sendEvent(self, eventType, eventField, eventValue):
-		msg = self.xboxrc_capnp.Xbox.new_message()
-		msg.timestamp = int(time.time() * 1000000) # microsecond
-		msg.type = eventType
-		msg.field = eventField
-		msg.value = eventValue
-		self.pub.send(msg)
 
 
 if __name__ == '__main__':
