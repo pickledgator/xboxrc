@@ -13,21 +13,24 @@ struct Xbox @0x8000000000000050
 
 	enum EventField {
 		none @0;
-		a @1;
-		b @2;
-		c @3;
-		x @4;
-		y @5;
-		z @6;
-		start @7;
-		select @8;
-		mode @9;
-		thumbl @10;
-		thumbr @11;
-		dpadUp @12;
-		dpadDown @13;
-		dpadLeft @14;
-		dpadRight @15;	
+		x @1;
+		y @2;
+		z @3;
+		rx @4;
+		ry @5;
+		rz @6;
+		hat0x @7;
+		hat0y @8;
+		a @9;
+		b @10;
+		tl @11;
+		tr @12;
+		select @13;
+		start @14;
+		mode @15;
+		thumbl @16;
+		thumbr @17;
+		
 	}
 
   timestamp		@0 : UInt64;
