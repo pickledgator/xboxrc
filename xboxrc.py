@@ -210,13 +210,13 @@ class XboxRC():
 		if value < 1:
 			return # only care about press events, not release events
 		# modes
-		if button == xboxrc_capnp.Xbox.EventField.dpad_up:
+		if button == xboxrc_capnp.Xbox.EventField.dpadUp:
 			self.mode = self.modes["manual"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpad_right:
+		elif button == xboxrc_capnp.Xbox.EventField.dpadRight:
 			self.mode = self.modes["altitude"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpad_down:
+		elif button == xboxrc_capnp.Xbox.EventField.dpadDown:
 			self.mode = self.modes["position"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpad_left:
+		elif button == xboxrc_capnp.Xbox.EventField.dpadLeft:
 			self.mode = self.modes["auto"]
 		# submodes
 		elif button == xboxrc_capnp.Xbox.EventField.tl:
