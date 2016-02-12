@@ -38,8 +38,8 @@ class XboxRC():
 			0x125 : 'pinkie', 0x126 : 'base', 0x127 : 'base2', 0x128 : 'base3', 0x129 : 'base4', 0x12a : 'base5',
 			0x12b : 'base6', 0x12f : 'dead', 0x130 : 'a', 0x131 : 'b', 0x132 : 'c', 0x133 : 'x', 0x134 : 'y',
 			0x135 : 'z', 0x136 : 'tl', 0x137 : 'tr', 0x138 : 'tl2', 0x139 : 'tr2', 0x13a : 'select', 0x13b : 'start',
-			0x13c : 'mode', 0x13d : 'thumbl', 0x13e : 'thumbr', 0x220 : 'dpadUp', 0x221 : 'dpadDown', 0x222 : 'dpadLeft',
-			0x223 : 'dpadRight', 0x2c0 : 'dpadLeft', 0x2c1 : 'dpadRight', 0x2c2 : 'dpadUp', 0x2c3 : 'dpadDown'
+			0x13c : 'mode', 0x13d : 'thumbl', 0x13e : 'thumbr', 0x220 : 'dpad_up', 0x221 : 'dpad_down', 0x222 : 'dpad_left',
+			0x223 : 'dpad_right', 0x2c0 : 'dpad_left', 0x2c1 : 'dpad_right', 0x2c2 : 'dpad_up', 0x2c3 : 'dpad_down'
 		}
 
 		self.modes = {
@@ -63,10 +63,11 @@ class XboxRC():
 		self.axis_map = []
 		self.button_map = []
 		self.eventStates = {}
-		self.channels = [] 			# throttle, yaw, pitch, roll, mode, submode
 		
 		self.mode = self.modes["manual"]
 		self.submode = self.submodes["idle"]
+
+		self.channels = [1500,1500,1500,1500,self.mode,self.submode] # throttle, yaw, pitch, roll, mode, submode
 
 		if self.useQuack:
 			self.quack = __import__('quack')
@@ -80,8 +81,8 @@ class XboxRC():
 		self.thread.daemon = True
 		self.thread.start()
 
-		#Timer(1,self.printEventStates).start()
-		Timer(1,self.printChannels).start()
+		#self.printEventStates()
+		self.printChannels()
 
 	def openXboxDevice(self):
 		# Open the joystick device.
@@ -103,6 +104,7 @@ class XboxRC():
 		buf = array.array('B', [0])
 		ioctl(self.jsdev, 0x80016a12, buf) # JSIOCGBUTTONS
 		num_buttons = buf[0]
+		print("num buttons {}".format(num_buttons))
 
 		# Get the axis map.
 		buf = array.array('B', [0] * 0x40)
@@ -161,6 +163,10 @@ class XboxRC():
 					eventType = xboxrc_capnp.Xbox.EventType.button
 					eventValue = value
 					button = self.button_map[number]
+					if button == 'dpad_up': button = 'dpadUp'
+					elif button == 'dpad_down': button = 'dpadDown'
+					elif button == 'dpad_left': button = 'dpadLeft'
+					elif button == 'dpad_right': button = 'dpadRight'
 					eventField = eval("xboxrc_capnp.Xbox.EventField."+button)
 					#if button:
 					#	self.button_states[button] = value
@@ -179,67 +185,73 @@ class XboxRC():
 					#	self.axis_states[axis] = fvalue
 					#	self.logger.info("{}: {:.3f}".format(axis, fvalue))
 				
-				# feed the mode and submode fsm's
-				self.processModes(eventField, eventValue)
-
 				# update master dict of current event state values
 				self.eventStates[eventField] = (eventType, eventValue)
+				# feed the mode and submode fsm's
+				self.updateModes(eventField, eventValue)
 				#self.logger.info("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
+				
 				if self.useQuack:
 					self.sendEvent(eventType, eventField, eventValue)
 
-	def processEventStates(self):
+	def updateChannels(self):
+		if len(self.eventStates) < 10:
+			return False
 		def convertInt(val):
-			return ((val / 32768.0) * 1000) + 1000
+			return ((val / 32768.0) * 500) + 1500
 		def convertBool(val):
-			return (val * 1000) + 1000
+			return (val * 500) + 1500
 		# throttle
-		self.channels[0] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.y])
+		self.channels[0] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.ly][1])
 		# yaw
-		self.channels[1] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.x])
+		self.channels[1] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.lx][1])
 		# pitch
-		self.channels[2] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.ry])
+		self.channels[2] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.ry][1])
 		# roll
-		self.channels[3] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.rx])
+		self.channels[3] = convertInt(self.eventStates[xboxrc_capnp.Xbox.EventField.rx][1])
 		# mode
 		self.channels[4] = self.mode
 		# submode
 		self.channels[5] = self.submode
+		return True
 
-	def processModes(self, button, value):
-		if value < 1:
+	def updateModes(self, button, value):
+		if value == 0:
 			return # only care about press events, not release events
 		# modes
-		if button == xboxrc_capnp.Xbox.EventField.dpadUp:
+		if button == xboxrc_capnp.Xbox.EventField.hat0y and value < 0: # up
 			self.mode = self.modes["manual"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpadRight:
+		elif button == xboxrc_capnp.Xbox.EventField.hat0x and value > 0: # right
 			self.mode = self.modes["altitude"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpadDown:
+		elif button == xboxrc_capnp.Xbox.EventField.hat0y and value > 0: # down
 			self.mode = self.modes["position"]
-		elif button == xboxrc_capnp.Xbox.EventField.dpadLeft:
+		elif button == xboxrc_capnp.Xbox.EventField.hat0x and value < 0: # left
 			self.mode = self.modes["auto"]
 		# submodes
 		elif button == xboxrc_capnp.Xbox.EventField.tl:
-			self.mode = self.modes["return"]
+			self.submode = self.submodes["return"]
 		elif button == xboxrc_capnp.Xbox.EventField.tr:
-			self.mode = self.modes["failsafe"]
+			self.submode = self.submodes["failsafe"]
 		elif button == xboxrc_capnp.Xbox.EventField.x:
-			self.mode = self.modes["launch"]
+			self.submode = self.submodes["launch"]
 		elif button == xboxrc_capnp.Xbox.EventField.y:
-			self.mode = self.modes["land"]
+			self.submode = self.submodes["land"]
 		elif button == xboxrc_capnp.Xbox.EventField.a:
-			self.mode = self.modes["path"]
+			self.submode = self.submodes["path"]
 
 	def printEventStates(self):
 		for key,val in self.eventStates.iteritems():
 			self.logger.info("Field {} Type {} Value {}".format(key,val[0],val[1]))
-		Timer(1,self.printEventStates).start()
+		self.printEventStatesTimer = Timer(1,self.printEventStates)
+		self.printEventStatesTimer.start()
 
 	def printChannels(self):
-		for i,ch in enumerate(self.channels):
-			self.logger.info("Ch{}: {}".format(i,ch))
-		self.logger.info("")
-		Timer(1,self.printChannels).start()
+		if self.updateChannels():
+			for i,ch in enumerate(self.channels):
+                       		self.logger.info("Ch{}: {}".format(i,ch))
+                	self.logger.info("")
+		self.printChannelsTimer = Timer(1,self.printChannels)
+		self.printChannelsTimer.start()
 
 	def sendEvent(self, eventType, eventField, eventValue):
 		msg = xboxrc_capnp.Xbox.new_message()
@@ -252,8 +264,8 @@ class XboxRC():
 	def signal_handler(self, signal, frame):
 		self.logger.info("Exiting...")
 		self.shouldExit = True
-		self.timer.cancel()
-		#self.timer.join()
+		self.printChannelsTimer.cancel()
+		self.printEventStatesTimer.cancel()
 
 if __name__ == '__main__':
 	rc = XboxRC(False)
