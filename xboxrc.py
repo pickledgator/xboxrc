@@ -279,8 +279,10 @@ class XboxRC():
 	def signal_handler(self, signal, frame):
 		self.logger.info("Exiting...")
 		self.shouldExit = True
-		self.printChannelsTimer.cancel()
-		self.printEventStatesTimer.cancel()
+		try: self.printChannelsTimer.cancel()
+		except: pass
+		try: self.printEventStatesTimer.cancel()
+		except: pass
 
 if __name__ == '__main__':
 	rc = XboxRC(False)
