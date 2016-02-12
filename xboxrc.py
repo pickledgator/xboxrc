@@ -118,8 +118,8 @@ class XboxRC():
 		self.thread.daemon = True
 		self.thread.start()
 
-		#self.timer = Timer(1,self.printEventStates)
-		#self.timer.start()
+		self.timer = Timer(1,self.printEventStates)
+		self.timer.start()
 
 		#self.pollXboxDeviceTimer = Timer(0.1, self.pollXboxDevice)
 		#self.pollXboxDeviceTimer.start()
@@ -228,8 +228,7 @@ class XboxRC():
 	def printEventStates(self):
 		for key,val in self.eventStates.iteritems():
 			self.logger.info("Field {} Type {} Value {}".format(key,val[0],val[1]))
-		self.timer = Timer(0.1,self.printEventStates)
-		self.timer.daemon = True
+		self.timer = Timer(1,self.printEventStates)
 		self.timer.start()
 
 	def sendEvent(self, eventType, eventField, eventValue):
@@ -244,12 +243,10 @@ class XboxRC():
 		self.logger.info("Exiting...")
 		self.shouldExit = True
 		self.timer.cancel()
-		self.timer.join()
-		sys.exit(0)
+		#self.timer.join()
 
 if __name__ == '__main__':
 	rc = XboxRC(False)
 	signal.signal(signal.SIGINT, rc.signal_handler)
-	rc.run()
 
 	
