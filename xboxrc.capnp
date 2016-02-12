@@ -13,9 +13,9 @@ struct Xbox @0x8000000000000050
 
 	enum EventField {
 		none @0;
-		x @1;
-		y @2;
-		z @3;
+		lx @1;
+		ly @2;
+		lz @3;
 		rx @4;
 		ry @5;
 		rz @6;
@@ -23,13 +23,15 @@ struct Xbox @0x8000000000000050
 		hat0y @8;
 		a @9;
 		b @10;
-		tl @11;
-		tr @12;
-		select @13;
-		start @14;
-		mode @15;
-		thumbl @16;
-		thumbr @17;
+		x @11;
+		y @12
+		tl @13;
+		tr @14;
+		select @15;
+		start @16;
+		mode @17;
+		thumbl @18;
+		thumbr @19;
 		
 	}
 
