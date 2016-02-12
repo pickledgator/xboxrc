@@ -114,15 +114,15 @@ class XboxRC():
 
 		self.openXboxDevice()
 
-		#self.thread = threading.Thread(name='xpad', target=self.run)
-		#self.thread.daemon = True
-		#self.thread.start()
+		self.thread = threading.Thread(name='xpad', target=self.readXboxDevice)
+		self.thread.daemon = True
+		self.thread.start()
 
 		#self.timer = Timer(1,self.printEventStates)
 		#self.timer.start()
 
-		self.pollXboxDeviceTimer = Timer(0.1, self.pollXboxDevice)
-		self.pollXboxDeviceTimer.start()
+		#self.pollXboxDeviceTimer = Timer(0.1, self.pollXboxDevice)
+		#self.pollXboxDeviceTimer.start()
 
 	def openXboxDevice(self):
 		# Open the joystick device.
@@ -180,54 +180,50 @@ class XboxRC():
 		self.logger.info("Searching for devices: Found {} devices".format(numDevices))
 		return numDevices
 
-	def pollXboxDevice(self):
+	def readXboxDevice(self):
 		if not self.devicesAvailable:
-			self.pollXboxDeviceTimer.cancel()
 			return
-		
-		self.logger.info("Polling")
 
 		# Main event loop
-		#while True:
-			#if self.shouldExit: break
-		eventType = xboxrc_capnp.Xbox.EventType.none
-		eventField = xboxrc_capnp.Xbox.EventField.none
-		eventValue = 0.0
-		evbuf = self.jsdev.read(8)
-		if evbuf:
-			time, value, type, number = struct.unpack('IhBB', evbuf)
+		while True:
+			if self.shouldExit: 
+				break
+			eventType = xboxrc_capnp.Xbox.EventType.none
+			eventField = xboxrc_capnp.Xbox.EventField.none
+			eventValue = 0.0
+			evbuf = self.jsdev.read(8)
+			if evbuf:
+				time, value, type, number = struct.unpack('IhBB', evbuf)
 
-			#if type & 0x80:
-			#	 self.logger.info("(initial)"),
+				#if type & 0x80:
+				#	 self.logger.info("(initial)"),
 
-			if type & 0x01:
-				eventType = xboxrc_capnp.Xbox.EventType.button
-				eventValue = value
-				button = self.button_map[number]
-				eventField = eval("xboxrc_capnp.Xbox.EventField."+button)
-				#if button:
-				#	self.button_states[button] = value
-				#	if value:
-				#		self.logger.info("{} pressed".format(button))
-				#	else:
-				#		self.logger.info("{} released".format(button))
+				if type & 0x01:
+					eventType = xboxrc_capnp.Xbox.EventType.button
+					eventValue = value
+					button = self.button_map[number]
+					eventField = eval("xboxrc_capnp.Xbox.EventField."+button)
+					#if button:
+					#	self.button_states[button] = value
+					#	if value:
+					#		self.logger.info("{} pressed".format(button))
+					#	else:
+					#		self.logger.info("{} released".format(button))
 
-			if type & 0x02:
-				eventType = xboxrc_capnp.Xbox.EventType.axis
-				eventValue = value
-				axis = self.axis_map[number]
-				eventField = eval("xboxrc_capnp.Xbox.EventField."+axis)
-				#if axis:
-				#	fvalue = value / 32767.0
-				#	self.axis_states[axis] = fvalue
-				#	self.logger.info("{}: {:.3f}".format(axis, fvalue))
-			
-			self.eventStates[eventField] = (eventType, eventValue)
-			#self.logger.info("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
-			if self.useQuack:
-				self.sendEvent(eventType, eventField, eventValue)
-
-		self.pollXboxDeviceTimer.start()
+				if type & 0x02:
+					eventType = xboxrc_capnp.Xbox.EventType.axis
+					eventValue = value
+					axis = self.axis_map[number]
+					eventField = eval("xboxrc_capnp.Xbox.EventField."+axis)
+					#if axis:
+					#	fvalue = value / 32767.0
+					#	self.axis_states[axis] = fvalue
+					#	self.logger.info("{}: {:.3f}".format(axis, fvalue))
+				
+				self.eventStates[eventField] = (eventType, eventValue)
+				self.logger.info("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
+				if self.useQuack:
+					self.sendEvent(eventType, eventField, eventValue)
 
 	def printEventStates(self):
 		for key,val in self.eventStates.iteritems():
