@@ -32,7 +32,10 @@ struct Xbox @0x8000000000000050
 		mode @17;
 		thumbl @18;
 		thumbr @19;
-		
+		dpad_up @20;
+		dpad_right @21;
+		dpad_down @22;
+		dpad_left @23;		
 	}
 
   timestamp		@0 : UInt64;
