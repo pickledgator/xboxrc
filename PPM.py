@@ -104,7 +104,7 @@ class PPM:
 		self.send() # repeat send
 
 	def update_channel(self, channel, width):
-		if channel > self.channels-2:
+		if channel > self.channels-1:
 			print("Invalid channel {} > max channel {}".format(channel, self.channels-1))
 			return
 		# check for valid input
