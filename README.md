@@ -43,10 +43,10 @@ The FrSky DHT transmitter module expects a CPPM signal from the pi with a 27ms f
 
 # Troubleshooting
 
-* Can't find xbox controller
+## Can't find xbox controller
 
-Try installing the joystick project from apt-get, and run 
+  Try installing the joystick project from apt-get, and then run 
 
-```joytest /dev/input/js0```
+  ```joytest /dev/input/js0```
 
-You should see a stream of commands printing to the terminal.
+  You should see a stream of commands printing to the terminal.
