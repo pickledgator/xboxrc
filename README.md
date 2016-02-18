@@ -16,8 +16,12 @@ Other hardware controllers and transmitter modules (e.g, Orange) may be compatib
 - Rasbian Jessie Lite or greater
 - Establish network connection to install
 - sudo apt-get update
-- sudo apt-get install git
+- sudo apt-get install git wget
+- cd ~/ && wget https://bootstrap.pypa.io/get-pip.py
+- sudo python get-pip.py && rm get-pip.py
 - sudo modprobe xpad
+- cd ~/ && wget abyz.co.uk/rpi/pigpio/pigpio.zip && unzip pigpio.zip
+- cd PIGPIO && make && sudo make install && rm ../pigpio.zip
 
 # About
 

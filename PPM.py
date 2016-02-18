@@ -88,7 +88,7 @@ if __name__ == "__main__":
    if not pi.connected:
       exit(0)
 
-   ppm = PPM.X(pi, 18)
+   ppm = PPM.X(pi, 6)
 
    updates = 0
    start = time.time()
