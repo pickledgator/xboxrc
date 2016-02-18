@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# PPM.py
-# 2016-02-16
-# Public Domain
-
 import time
 import signal
 import pigpio
