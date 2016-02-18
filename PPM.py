@@ -4,14 +4,16 @@
 # 2016-02-16
 # Public Domain
 
+import time
 import pigpio
+from threading import Timer
 
-class X:
+class PPM:
 
    GAP=100
-   WAVES=3
+   #WAVES=3
 
-   def __init__(self, pi, gpio, channels=8, frame_ms=27):
+   def __init__(self, pi, gpio, channels=8, frame_ms=500):
       self.pi = pi
       self.gpio = gpio
 
@@ -30,14 +32,25 @@ class X:
 
       self.channels = channels
 
-      self._widths = [1000] * channels # set each channel to minimum pulse width
+      self._widths = [1000 for c in channels] # init to min channels
 
-      self._wid = [None]*self.WAVES
-      self._next_wid = 0
+      self._waves = [None, None] # list to keep track of the next waves, maintains gapless transition on updates
 
-      pi.write(gpio, pigpio.LOW)
+      pi.write(gpio, pigpio.LOW) # start gpio low
+
+      self.shouldExit = False
+
+   def start(self):
+      self.sendThread = threading.Thread(name='ppmsend', target=self.send)
+      self.sendThread.daemon = True
+      self.sendThread.start()
 
    def _update(self):
+      # if the waves list is full, send the first one
+      if len(self._waves) == 2:
+         self._waves.pop(0) # pop off the first wave
+
+      # calculate the next wave to be added
       wf =[]
       micros = 0
       for i in self._widths:
@@ -49,19 +62,43 @@ class X:
 
       self.pi.wave_add_generic(wf)
       wid = self.pi.wave_create()
-      self.pi.wave_send_repeat(wid)
-      self._wid[self._next_wid] = wid
+      self._waves.append(wid)
+
+      #self.pi.wave_send_repeat(wid)
+      #self._wid[self._next_wid] = wid
       #print("create", self._next_wid, "with", wid)
 
-      self._next_wid += 1
-      if self._next_wid >= self.WAVES:
-         self._next_wid = 0
+      #self._next_wid += 1
+      #if self._next_wid >= self.WAVES:
+      #   self._next_wid = 0
 
-      wid = self._wid[self._next_wid]
-      if wid is not None:
+      #wid = self._wid[self._next_wid]
+      #if wid is not None:
          #print("delete", self._next_wid, "with", wid)
-         self.pi.wave_delete(wid)
-         self._wid[self._next_wid] = None
+      #   self.pi.wave_delete(wid)
+      #   self._wid[self._next_wid] = None
+
+   def send(self):
+      if self.shouldExit:
+         return
+
+      # if the tx is still sending the last wave, wait until its done
+      if self.pi.wave_tx_busy():
+         self.sendTimer = Timer(0.001,self.send)
+         self.sendTimer.start()
+         return
+
+      if self._waves is not None:
+         self.pi.wave_send_once(self._waves[0])
+         print("sending wid {}".format(self._waves[0]))
+      else:
+         print("wid is None")
+         # wait a bit before trying again to send
+         self.sendTimer = Timer(0.5,self.send)
+         self.sendTimer.start()
+         return
+
+      self.send() # repeat send
 
    def update_channel(self, channel, width):
       self._widths[channel] = width
@@ -72,36 +109,40 @@ class X:
       self._update()
 
    def cancel(self):
+      self.shouldExit = True
+      self.sendTimer.cancel()
       self.pi.wave_tx_stop()
-      for i in self._wid:
-         if i is not None:
-            self.pi.wave_delete(i)
+      for w in self._waves:
+         if w is not None:
+            self.pi.wave_delete(w)
 
 if __name__ == "__main__":
-
-   import time
-   import PPM
-   import pigpio
 
    pi = pigpio.pi()
 
    if not pi.connected:
       exit(0)
 
-   ppm = PPM.X(pi, 6)
+   ppm = PPM(pi, 6)
 
-   updates = 0
-   start = time.time()
-   for chan in range(8):
-      for pw in range(1000, 2000, 5):
-         ppm.update_channel(chan, pw)
-         updates += 1
-         time.sleep(0.03)
-   end = time.time()
-   secs = end - start
-   print("{} updates in {:.1f} seconds ({}/s)".format(updates, secs, int(updates/secs)))
+   # updates = 0
+   # start = time.time()
+   # for chan in range(8):
+   #    for pw in range(1000, 2000, 5):
+   #       ppm.update_channel(chan, pw)
+   #       updates += 1
+   #       time.sleep(0.03)
+   # end = time.time()
+   # secs = end - start
+   # print("{} updates in {:.1f} seconds ({}/s)".format(updates, secs, int(updates/secs)))
+
+   ppm.update_channels([1000, 1000, 1000, 1000, 1000, 1000, 1000, 2000])
+
+   time.sleep(2)
 
    ppm.update_channels([1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
+
+   ppm.send()
 
    time.sleep(2)
 
