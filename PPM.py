@@ -70,12 +70,12 @@ class PPM:
 			return
 
 		# if the tx is still sending the last wave, wait until its done
-		if self.pi.wave_tx_busy():
-			self.sendTimer = Timer(0.0001,self.send)
-			self.sendTimer.start()
-			return
+		# if self.pi.wave_tx_busy():
+		# 	self.sendTimer = Timer(0.0001,self.send)
+		# 	self.sendTimer.start()
+		# 	return
 
-		if len(self._waves) > 0:
+		if len(self._waves) == 2:
 			self.pi.wave_send_using_mode(self._waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
 			sendTime = time.time()
 			#self.pi.wave_send_once(self._waves[0])
@@ -88,8 +88,11 @@ class PPM:
 			# call back when the next frame should be sent
 			sleepTime = self.lastSendTime + (self.frame_us*1000.0) - time.time()
 			self.lastSendTime = sendTime
+		elif len(self._waves) == 1:
+			print("Doing nothing, the last frame should still be sending on repeat")
+			sleepTime = 0.01
 		else:
-			print("wid is None at waves[0]")
+			print("No waves in list to send")
 			# just wait a bit before trying again to send
 			sleepTime = 0.1
 
