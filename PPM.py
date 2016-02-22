@@ -76,19 +76,26 @@ class PPM:
 			return
 
 		if len(self._waves) > 0:
-			self.pi.wave_send_once(self._waves[0])
+			self.pi.wave_send_using_mode(self._waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
+			sendTime = time.time()
+			#self.pi.wave_send_once(self._waves[0])
 			if len(self._waves) > 1:
-				self._waves.pop(0) # if there's two items in our list stack, pop the first one, so we get to the next queued one
+				# if there's two items in our list stack, pop the first one, so we get to the next queued one
+				self.pi.wave_delete(self._waves[0]) # delete the wave
+				self._waves.pop(0) # pop it off our list
 	  		self.count += 1
 			print("sending wid {}".format(self._waves[0]))
+			# call back when the next frame should be sent
+			sleepTime = self.lastSendTime + (self.frame_us*1000.0) - time.time()
+			self.lastSendTime = sendTime
 		else:
 			print("wid is None at waves[0]")
-			# wait a bit before trying again to send
-			self.sendTimer = Timer(0.01,self.send)
-			self.sendTimer.start()
-			return
+			# just wait a bit before trying again to send
+			sleepTime = 0.1
 
-		self.send() # repeat send
+		print("Sleeping for {}s".format(sleepTime/1000.0))
+		self.sendTimer = Timer(sleepTime,self.send)
+		self.sendTimer.start()
 
 	def update_channel(self, channel, width):
 		self._widths[channel] = width
