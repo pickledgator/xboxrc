@@ -16,8 +16,8 @@ class PPM:
 	def __init__(self, gpio, channels=8, frame_ms=27, gap_ms=100, debug=False):
 		self.pi = pigpio.pi()
 
-        	if not self.pi.connected:
-                	print("pigpio error, is the pigpiod running?")
+			if not self.pi.connected:
+					print("pigpio error, is the pigpiod running?")
 			exit(0)
 
 		self.gpio = gpio
@@ -47,11 +47,12 @@ class PPM:
 
 		self.shouldExit = False
 		self.count = 0
+		self.lastSendTime = 0
 
 		_ppms.append(self)
 		signal.signal(signal.SIGINT, _signalHandler)
-            	signal.signal(signal.SIGTERM, _signalHandler)
-            	signal.signal(signal.SIGHUP, _signalHandler)
+		signal.signal(signal.SIGTERM, _signalHandler)
+		signal.signal(signal.SIGHUP, _signalHandler)
 
 	def start(self):
 		self.sendThread = threading.Thread(name='ppmsend', target=self.send)
@@ -84,24 +85,36 @@ class PPM:
 		if self.shouldExit: return
 
 		# if the tx is still sending the last wave, wait until its done
-		while self.pi.wave_tx_busy():
-			if self.shouldExit: return
-			time.sleep(0.0001)
 
-		if len(self._waves) > 0:
-			if self.debug:
-				print("sending wid {} waves len {}".format(self._waves[0], len(self._waves)))
-			self.pi.wave_send_once(self._waves[0])
+		# if self.pi.wave_tx_busy():
+		# 	self.sendTimer = Timer(0.0001,self.send)
+		# 	self.sendTimer.start()
+		# 	return
+
+		if len(self._waves) == 2:
+			self.pi.wave_send_using_mode(self._waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
+			sendTime = time.time()
+			#self.pi.wave_send_once(self._waves[0])
 			if len(self._waves) > 1:
-				self._waves.pop(0) # if there's two items in our list stack, pop the first one, so we get to the next queued one
-	  		self.count += 1
+				# if there's two items in our list stack, pop the first one, so we get to the next queued one
+				self.pi.wave_delete(self._waves[0]) # delete the wave
+				self._waves.pop(0) # pop it off our list
+			self.count += 1
+			print("sending wid {}".format(self._waves[0]))
+			# call back when the next frame should be sent
+			sleepTime = self.lastSendTime + (self.frame_us*1000.0) - time.time()
+			self.lastSendTime = sendTime
+		elif len(self._waves) == 1:
+			print("Doing nothing, the last frame should still be sending on repeat")
+			sleepTime = 0.01
 		else:
-			if self.debug:
-				print("wid is None at waves[0]")
-			# wait a bit before trying again to send
-			time.sleep(0.1)
+			print("No waves in list to send")
+			# just wait a bit before trying again to send
+			sleepTime = 0.1
 
-		self.send() # repeat send
+		print("Sleeping for {}s".format(sleepTime/1000.0))
+		self.sendTimer = Timer(sleepTime,self.send)
+		self.sendTimer.start()
 
 	def update_channel(self, channel, width):
 		if channel > self.channels-1:
