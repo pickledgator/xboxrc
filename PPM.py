@@ -114,7 +114,7 @@ class PPM:
 		remaining = self.lastSendTime + self.frame_s - time.time()
 		if remaining < self.frame_s/2.0:
 			remaining += self.frame_s
-		#print("lasttime {} frame_s {} time.time {} remaining {}".format(self.lastSendTime, self.frame_s, time.time(), remaining))
+		print("remaining {}".format(remaining))
 		self.lastSendTime = time.time()
 		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
