@@ -13,7 +13,7 @@ def _signalHandler(signum, frame):
 	exit(0)
 
 class PPM:
-	def __init__(self, gpio, channels=8, frame_ms=27, gap_us=100, debug=False):
+	def __init__(self, gpio, channels=8, frame_ms=500, gap_us=100, debug=False):
 		self.pi = pigpio.pi()
 
 		if not self.pi.connected:
@@ -40,9 +40,8 @@ class PPM:
 
 		self.channels = channels
 
-		self._widths = [1000 for c in range(channels)] # init to min channels
-
-		self._waves = [None, None] # list to keep track of the next waves, maintains gapless transition on updates
+		self.widths = [1000 for c in range(channels)] # init to min channels
+		self.waves = []
 
 		self.pi.write(gpio, pigpio.LOW) # start gpio low
 
@@ -61,17 +60,14 @@ class PPM:
 		self.sendThread.daemon = True
 		self.sendThread.start()
 
-	def _update(self):
+	def update_waves(self):
 		if self.debug:
-			print("Updating channels {}".format(' '.join(str(s) for s in self._widths)))
-		# if the waves list is full, send the first one
-		if len(self._waves) == 2:
-			self._waves.pop(0) # pop off the first wave
+			print("Updating channels {}".format(' '.join(str(s) for s in self.widths)))
 
 		# calculate the next wave to be added
 		wf =[]
 		micros = 0
-		for i in self._widths:
+		for i in self.widths:
 			wf.append(pigpio.pulse(0, 1<<self.gpio, self.gap_us))
 			wf.append(pigpio.pulse(1<<self.gpio, 0, i))
 			micros += (i+self.gap_us)
@@ -81,28 +77,45 @@ class PPM:
 		# add it to our 2 element list
 		self.pi.wave_add_generic(wf)
 		wid = self.pi.wave_create()
-		self._waves.append(wid)
+		self.waves.append(wid)
 
-	def sendHelper(self):
-        	if len(self._waves) > 1:
-                        # if there's two items in our list stack, pop the first one, so we get to the next queued one
-                        #self.pi.wave_delete(self._waves[0]) # delete the wave
-                        self._waves.pop(0) # pop it off our list	
+	# def sendHelper(self):
+ #        if len(self.waves) > 1:
+ #            # if there's two items in our list stack, pop the first one, so we get to the next queued one
+ #            #self.pi.wave_delete(self.waves[0]) # delete the wave
+ #            self.waves.pop(0) # pop it off our list	
 		
-		if self._waves[0] is not None:
-			print("sending wid {}".format(self._waves[0]))
-                	self.pi.wave_send_using_mode(self._waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
-                	sendTime = time.time()
-                	#self.pi.wave_send_once(self._waves[0])
-                
-			self.count += 1
-                	# call back when the next frame should be sent
-                	self.lastSendTime = sendTime
+	# 	if self.waves[0] is not None:
+	# 		print("sending wid {}".format(self.waves[0]))
+ #                	self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
+ #                	sendTime = time.time()
+ #                	#self.pi.wave_send_once(self.waves[0])
+				
+	# 		self.count += 1
+ #                	# call back when the next frame should be sent
+ #                	self.lastSendTime = sendTime
 
 	def send(self):
-		if self.shouldExit: return
+		if self.shouldExit: 
+			return
 
-		#print("Waves {}".format([int(x) for x in self._waves]))
+		if len(self.waves) == 0:
+			print("No waves in list to send, sleeping for frame.")
+			# no wave to send, try again next frame time
+			self.sendTimer = threading.Timer(self.frame_s,self.send)
+			self.sendTimer.start()
+			return
+
+		print("Sending wid {}".format(self.waves[0]))
+		self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
+		
+		self.waves.pop()
+		
+		self.sendTimer = threading.Timer(self.frame_s,self.send)
+		self.sendTimer.start()
+
+
+		#print("Waves {}".format([int(x) for x in self.waves]))
 		
 		# if the tx is still sending the last wave, wait until its done
 
@@ -111,28 +124,28 @@ class PPM:
 		# 	self.sendTimer.start()
 		# 	return
 
-		if len(self._waves) == 2:
-			self.sendHelper()
-			#sleepTime = self.lastSendTime + self.frame_s - time.time()
-			#print("last {} frame {} current {}".format(self.lastSendTime, self.frame_s, time.time()))
-			sleepTime = self.frame_s
-			self.lastWavesLength = 2
-		elif len(self._waves) == 1:
-			if self.lastWavesLength == 0:
-				self.sendHelper()
-				sleepTime = self.frame_s
-			else:
-				sleepTime = 0.001
-			self.lastWavesLength = 1
-		else:
-			print("No waves in list to send")
-			# just wait a bit before trying again to send
-			sleepTime = 0.001
-			self.lastWavesLength = 0
+		# if len(self.waves) == 2:
+		# 	self.sendHelper()
+		# 	#sleepTime = self.lastSendTime + self.frame_s - time.time()
+		# 	#print("last {} frame {} current {}".format(self.lastSendTime, self.frame_s, time.time()))
+		# 	sleepTime = self.frame_s
+		# 	self.lastWavesLength = 2
+		# elif len(self.waves) == 1:
+		# 	if self.lastWavesLength == 0:
+		# 		self.sendHelper()
+		# 		sleepTime = self.frame_s
+		# 	else:
+		# 		sleepTime = 0.001
+		# 	self.lastWavesLength = 1
+		# else:
+		# 	print("No waves in list to send")
+		# 	# just wait a bit before trying again to send
+		# 	sleepTime = 0.001
+		# 	self.lastWavesLength = 0
 
-		#print("Sleeping for {}s".format(sleepTime))
-		self.sendTimer = threading.Timer(sleepTime,self.send)
-		self.sendTimer.start()
+		# #print("Sleeping for {}s".format(sleepTime))
+		# self.sendTimer = threading.Timer(sleepTime,self.send)
+		# self.sendTimer.start()
 
 	def update_channel(self, channel, width):
 		if channel > self.channels-1:
@@ -140,8 +153,8 @@ class PPM:
 			return
 		# check for valid input
 		width = min(max(1000,width), 2000)
-		self._widths[channel] = width
-		self._update()
+		self.widths[channel] = width
+		self.update_waves()
 
 	def update_channels(self, widths):
 		if not len(widths) == self.channels:
@@ -149,8 +162,8 @@ class PPM:
 			return
 		# check for valid input
 		widths = [min(max(1000,w), 2000) for w in widths]
-		self._widths[0:len(widths)] = widths[0:self.channels]
-		self._update()
+		self.widths[0:len(widths)] = widths[0:self.channels]
+		self.update_waves()
 
 	def stop(self):
 		print("Stopping waveforms")
@@ -158,7 +171,7 @@ class PPM:
 		time.sleep(0.5) # wait a bit for the thread to exit
 		self.pi.wave_tx_stop()
 		self.pi.wave_clear()
-		#for w in self._waves:
+		#for w in self.waves:
 		#	if w is not None:
 		#		self.pi.wave_delete(w)
 		self.pi.stop()		
