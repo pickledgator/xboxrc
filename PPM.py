@@ -13,7 +13,7 @@ def _signalHandler(signum, frame):
 	exit(0)
 
 class PPM:
-	def __init__(self, gpio, channels=8, frame_ms=500, gap_us=100, debug=False):
+	def __init__(self, gpio, channels=8, frame_ms=50, gap_us=100, debug=False):
 		self.pi = pigpio.pi()
 
 		if not self.pi.connected:
