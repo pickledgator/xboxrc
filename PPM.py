@@ -119,6 +119,8 @@ class PPM:
 		self.sendTimer = threading.Timer(self.frame_s,self.send)
 		self.sendTimer.start()
 
+		self.count += 1
+
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
 		
