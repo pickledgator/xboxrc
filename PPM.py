@@ -191,6 +191,7 @@ if __name__ == "__main__":
 	# build ppm using gpio 6
 	ppm = PPM(6)
 	ppm.start()
+	start = time.time()
 	# test invalid range inputs
 	ppm.update_channels([3000, 500, -1000, 1000, 1000, 1000, 1000, 2000])
 	time.sleep(0.5)
@@ -200,7 +201,6 @@ if __name__ == "__main__":
 	ppm.update_channel(6, 500)
 	# test channel out of range
 	ppm.update_channel(9, 1500)
-	start = time.time()
 	ppm.update_channels([1500, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
 	ppm.update_channels([1501, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
 	for i in range(1,20):
