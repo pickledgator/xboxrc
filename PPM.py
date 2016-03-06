@@ -107,8 +107,10 @@ class PPM:
 		if len(self.waves) == 0:
 			print("No waves in list to send, sleeping for frame.")
 			# no wave to send, try again next frame time
-			self.sendTimer = threading.Timer(self.frame_s,self.send)
+			remaining = self.lastSendTime + self.frame_s - time.time()
+			self.sendTimer = threading.Timer(remaining,self.send)
 			self.sendTimer.start()
+			self.lastSendTime = time.time()
 			return
 
 		print("Sending wid {}".format(self.waves[0]))
@@ -116,9 +118,11 @@ class PPM:
 		
 		self.waves.pop()
 		
+		remaining = self.lastSendTime + self.frame_s - time.time()
 		self.sendTimer = threading.Timer(self.frame_s,self.send)
 		self.sendTimer.start()
 
+		self.lastSendTime = time.time()
 		self.count += 1
 
 
@@ -185,6 +189,7 @@ class PPM:
 
 if __name__ == "__main__":
 
+	ppm.start()
 	# build ppm using gpio 6
 	ppm = PPM(6)
 	# test invalid range inputs
@@ -197,7 +202,6 @@ if __name__ == "__main__":
 	# test channel out of range
 	ppm.update_channel(9, 1500)
 	start = time.time()
-	ppm.start()
 	ppm.update_channels([1500, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
 	ppm.update_channels([1501, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
 	for i in range(1,20):
