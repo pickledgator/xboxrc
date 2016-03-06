@@ -94,7 +94,7 @@ class PPM:
 			#print("{} No waves in list to send".format(time.time()))
 		else:
 			self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
-			print("{} Sending wid {}".format(time.time(), self.waves[0]))
+			#print("{} Sending wid {}".format(time.time(), self.waves[0]))
 			self.pi.wave_delete(self.waves[0])
 			self.waves.pop()
 		
