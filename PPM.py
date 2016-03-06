@@ -77,6 +77,11 @@ class PPM:
 		# add it to our 2 element list
 		self.pi.wave_add_generic(wf)
 		wid = self.pi.wave_create()
+		
+		# if there's already a wave in the list, pop it off, we only want max 1 wave in the list
+		if len(self.waves) > 0:
+			self.waves.pop()
+
 		self.waves.append(wid)
 
 	# def sendHelper(self):
@@ -195,7 +200,7 @@ if __name__ == "__main__":
 	ppm.update_channels([1501, 2000, 1000, 2000, 1000, 2000, 1000, 2000])
 	for i in range(1,20):
 		ppm.update_channels([1000+i*20, 2000, 1000+i*20, 2000, 1000+i*20, 2000, 1000+i*20, 2000])
-		time.sleep(1)
+		time.sleep(0.1)
 	ppm.stop()
 	end = time.time()
 	print("{} sends in {:.1f} secs ({:.2f}/s) avg time {:.2f}ms".format(ppm.count, end-start, ppm.count/(end-start), 1000*(end-start)/float(ppm.count)))
