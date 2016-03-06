@@ -111,12 +111,12 @@ class PPM:
 		else:
 			self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
 			print("Sending wid {}".format(self.waves[0]))
+			self.waves.pop()
 		
+		print("lasttime {} frame_s {} time.time {} remaining {}".format(self.lastSendTime, self.frame_s, time.time(), remaining))
 		remaining = self.lastSendTime + self.frame_s - time.time()
 		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
-
-		self.waves.pop()
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
 		
