@@ -108,6 +108,7 @@ class PPM:
 
 		if len(self.waves) == 0:
 			# no wave to send, try again next frame time
+			print("lastTime {} frame_s {} time.time {}".format(self.lastSendTime, self.frame_s, time.time()))
 			remaining = self.lastSendTime + self.frame_s - time.time()
 			print("No waves in list to send, sleeping for remainder of frame {}s".format(remaining))
 			self.lastSendTime = time.time()
