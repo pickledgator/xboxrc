@@ -112,7 +112,6 @@ class PPM:
 			self.waves.pop()
 		
 		remaining = self.lastSendTime + self.frame_s - time.time()
-		if remaining < 0: remaining = 0
 		if remaining < self.frame_s/2.0:
 			remaining += self.frame_s
 		print("remaining {}".format(remaining))
