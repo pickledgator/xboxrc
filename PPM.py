@@ -105,13 +105,10 @@ class PPM:
 			return
 
 		if len(self.waves) == 0:
-			print("No waves in list to send")
+			print("{} No waves in list to send".format(time.time()))
 		else:
-			one = time.time()
 			self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
-			two = time.time()
-			print("diff {}".format((two-one)*1000))
-			print("Sending wid {}".format(self.waves[0]))
+			print("{} Sending wid {}".format(time.time(), self.waves[0]))
 			self.waves.pop()
 		
 		remaining = self.lastSendTime + self.frame_s - time.time()
