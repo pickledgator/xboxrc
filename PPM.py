@@ -113,8 +113,8 @@ class PPM:
 			print("Sending wid {}".format(self.waves[0]))
 			self.waves.pop()
 		
-		print("lasttime {} frame_s {} time.time {} remaining {}".format(self.lastSendTime, self.frame_s, time.time(), remaining))
 		remaining = self.lastSendTime + self.frame_s - time.time()
+		print("lasttime {} frame_s {} time.time {} remaining {}".format(self.lastSendTime, self.frame_s, time.time(), remaining))
 		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
 
