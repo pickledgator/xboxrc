@@ -120,7 +120,7 @@ class PPM:
 		remaining = self.lastSendTime + self.frame_s - time.time()
 		print("lastTime {} frame_s {} time.time {}".format(self.lastSendTime, self.frame_s, time.time()))
 		print("Sending wid {} | Sleeping for remainder of frame {}s".format(self.waves[0], remaining))
-		self.sendTimer = threading.Timer(self.frame_s,self.send)
+		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
 		self.lastSendTime = time.time()
 
