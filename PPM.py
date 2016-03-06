@@ -108,12 +108,8 @@ class PPM:
 
 		if len(self.waves) == 0:
 			# no wave to send, try again next frame time
-			print("lastTime {} frame_s {} time.time {}".format(self.lastSendTime, self.frame_s, time.time()))
-			remaining = self.lastSendTime + self.frame_s - time.time()
-			print("No waves in list to send, sleeping for remainder of frame {}s".format(remaining))
-			self.lastSendTime = time.time()
-			print("Set lastsendtime: {}".format(self.lastSendTime))
-			self.sendTimer = threading.Timer(remaining,self.send)
+			print("No waves in list to send")
+			self.sendTimer = threading.Timer(self.frame_s,self.send)
 			self.sendTimer.start()
 			return
 
@@ -122,11 +118,8 @@ class PPM:
 		self.waves.pop()
 		
 		remaining = self.lastSendTime + self.frame_s - time.time()
-		print("lastTime {} frame_s {} time.time {}".format(self.lastSendTime, self.frame_s, time.time()))
-		print("Sending wid {} | Sleeping for remainder of frame {}s".format(self.waves[0], remaining))
-		self.lastSendTime = time.time()
-		print("Set lastsendtime: {}".format(self.lastSendTime))
-		self.sendTimer = threading.Timer(remaining,self.send)
+		print("Sending wid {}".format(self.waves[0]))
+		self.sendTimer = threading.Timer(self.frame_s,self.send)
 		self.sendTimer.start()
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
