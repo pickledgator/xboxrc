@@ -12,6 +12,7 @@ import time
 import capnp, xboxrc_capnp
 from threading import Timer
 from fcntl import ioctl
+from PPM import *
 
 logging.basicConfig(format='%(asctime)s %(levelname)s [%(module)s] %(message)s', level=logging.INFO)
 
@@ -67,7 +68,7 @@ class XboxRC():
 		self.mode = self.modes["manual"]
 		self.submode = self.submodes["idle"]
 
-		self.channels = [1500,1500,1500,1500,self.mode,self.submode] # throttle, yaw, pitch, roll, mode, submode
+		self.channels = [1500,1500,1500,1500,self.mode,self.submode,0,0] # throttle, yaw, pitch, roll, mode, submode, 0, 0
 
 		# if self.useQuack:
 		# 	self.quack = __import__('quack')
@@ -83,6 +84,9 @@ class XboxRC():
 
 		#self.printEventStates()
 		self.printChannels()
+
+		self.ppm = PPM(6)
+		self.ppm.start() # starts a separate thread
 		
 	def detectXboxDevices(self):
 		# Iterate over the joystick devices.
@@ -205,7 +209,9 @@ class XboxRC():
 				# feed the mode and submode fsm's
 				self.updateModes(eventField, eventValue)
 				#self.logger.info("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
-				
+				# run the channels updater on every value
+				self.updateChannels()
+
 				if self.useQuack:
 					self.sendEvent(eventType, eventField, eventValue)
 
@@ -228,6 +234,10 @@ class XboxRC():
 		self.channels[4] = self.mode
 		# submode
 		self.channels[5] = self.submode
+
+		# update ppm class with the new values
+		self.ppm.update_channels(self.channels)
+
 		return True
 
 	def updateModes(self, button, value):
@@ -254,11 +264,11 @@ class XboxRC():
 		elif button == xboxrc_capnp.Xbox.EventField.a:
 			self.submode = self.submodes["path"]
 
-	def printEventStates(self):
-		for key,val in self.eventStates.iteritems():
-			self.logger.info("Field {} Type {} Value {}".format(key,val[0],val[1]))
-		self.printEventStatesTimer = Timer(1,self.printEventStates)
-		self.printEventStatesTimer.start()
+	# def printEventStates(self):
+	# 	for key,val in self.eventStates.iteritems():
+	# 		self.logger.info("Field {} Type {} Value {}".format(key,val[0],val[1]))
+	# 	self.printEventStatesTimer = Timer(1,self.printEventStates)
+	# 	self.printEventStatesTimer.start()
 
 	def printChannels(self):
 		if self.updateChannels():
@@ -278,11 +288,12 @@ class XboxRC():
 
 	def signal_handler(self, signal, frame):
 		self.logger.info("Exiting...")
+		self.ppm.stop()
 		self.shouldExit = True
 		try: self.printChannelsTimer.cancel()
 		except: pass
-		try: self.printEventStatesTimer.cancel()
-		except: pass
+		#try: self.printEventStatesTimer.cancel()
+		#except: pass
 
 if __name__ == '__main__':
 	rc = XboxRC(False)
