@@ -107,23 +107,22 @@ class PPM:
 		self.count += 1
 
 		if len(self.waves) == 0:
-			print("No waves in list to send, sleeping for frame.")
 			# no wave to send, try again next frame time
 			remaining = self.lastSendTime + self.frame_s - time.time()
+			print("No waves in list to send, sleeping for remainder of frame {}s".format(remaining))
 			self.sendTimer = threading.Timer(remaining,self.send)
 			self.sendTimer.start()
 			self.lastSendTime = time.time()
 			return
 
-		print("Sending wid {}".format(self.waves[0]))
 		self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
 		
 		self.waves.pop()
 		
 		remaining = self.lastSendTime + self.frame_s - time.time()
+		print("Sending wid {} | Sleeping for remainder of frame {}s".format(self.waves[0], remaining))
 		self.sendTimer = threading.Timer(self.frame_s,self.send)
 		self.sendTimer.start()
-
 		self.lastSendTime = time.time()
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
