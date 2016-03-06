@@ -104,12 +104,13 @@ class PPM:
 		if self.shouldExit: 
 			return
 
-		self.count += 1
-
 		if len(self.waves) == 0:
 			print("No waves in list to send")
 		else:
+			one = time.time()
 			self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
+			two = time.time()
+			print("diff {}".format((two-one)*1000))
 			print("Sending wid {}".format(self.waves[0]))
 			self.waves.pop()
 		
@@ -118,6 +119,8 @@ class PPM:
 		self.lastSendTime = time.time()
 		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
+
+		self.count += 1
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
 		
