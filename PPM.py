@@ -90,7 +90,8 @@ class PPM:
 			return
 
 		if len(self.waves) == 0:
-			print("{} No waves in list to send".format(time.time()))
+			donothing = 1
+			#print("{} No waves in list to send".format(time.time()))
 		else:
 			self.pi.wave_send_using_mode(self.waves[0], pigpio.WAVE_MODE_REPEAT_SYNC)
 			print("{} Sending wid {}".format(time.time(), self.waves[0]))
@@ -100,7 +101,6 @@ class PPM:
 		remaining = self.lastSendTime + self.frame_s - time.time()
 		if remaining < self.frame_s/2.0:
 			remaining += self.frame_s
-		print("remaining {}".format(remaining))
 		self.lastSendTime = time.time()
 		self.sendTimer = threading.Timer(remaining,self.send)
 		self.sendTimer.start()
@@ -131,9 +131,9 @@ class PPM:
 		time.sleep(0.5) # wait a bit for the thread to exit
 		self.pi.wave_tx_stop()
 		self.pi.wave_clear()
-		#for w in self.waves:
-		#	if w is not None:
-		#		self.pi.wave_delete(w)
+		for w in self.waves:
+			if w is not None:
+				self.pi.wave_delete(w)
 		self.pi.stop()		
 
 if __name__ == "__main__":
@@ -156,6 +156,6 @@ if __name__ == "__main__":
 	for i in range(1,20):
 		ppm.update_channels([1000+i*20, 2000, 1000+i*20, 2000, 1000+i*20, 2000, 1000+i*20, 2000])
 		time.sleep(0.1)
-	ppm.stop()
 	end = time.time()
+	ppm.stop()
 	print("{} sends in {:.1f} secs ({:.2f}/s) avg time {:.2f}ms".format(ppm.count, end-start, ppm.count/(end-start), 1000*(end-start)/float(ppm.count)))
