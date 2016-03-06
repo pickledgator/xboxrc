@@ -13,7 +13,7 @@ def _signalHandler(signum, frame):
 	exit(0)
 
 class PPM:
-	def __init__(self, gpio, channels=8, frame_ms=500, gap_us=100, debug=False):
+	def __init__(self, gpio, channels=8, frame_ms=50, gap_us=100, debug=False):
 		self.pi = pigpio.pi()
 
 		if not self.pi.connected:
@@ -104,6 +104,8 @@ class PPM:
 		if self.shouldExit: 
 			return
 
+		self.count += 1
+
 		if len(self.waves) == 0:
 			print("No waves in list to send, sleeping for frame.")
 			# no wave to send, try again next frame time
@@ -123,8 +125,6 @@ class PPM:
 		self.sendTimer.start()
 
 		self.lastSendTime = time.time()
-		self.count += 1
-
 
 		#print("Waves {}".format([int(x) for x in self.waves]))
 		
@@ -189,9 +189,9 @@ class PPM:
 
 if __name__ == "__main__":
 
-	ppm.start()
 	# build ppm using gpio 6
 	ppm = PPM(6)
+	ppm.start()
 	# test invalid range inputs
 	ppm.update_channels([3000, 500, -1000, 1000, 1000, 1000, 1000, 2000])
 	time.sleep(0.5)
