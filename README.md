@@ -46,7 +46,7 @@ Left button:
 Right button:
 
 
-The FrSky DHT transmitter module expects a CPPM signal from the pi with a 27ms frame length. This allows us to combine the 8 channels with 1ms minimums, 2ms maximums and 100 microsecond gaps. The remaining frame time is allocated for the sync pulse. You can read more about how CPPM signals work here[https://www.youtube.com/watch?v=sEChFDRf8Ek] and here[https://sourceforge.net/p/arduinorclib/ ... %20Signal/]. To generate the CPPM signal, we use the (pigpio library)[https://github.com/joan2937/pigpio/tree/master]. Thanks to Joan[https://github.com/joan2937] for the support.
+The FrSky DHT transmitter module expects a CPPM signal from the pi with a 27ms frame length. This allows us to combine the 8 channels with 1ms minimums, 2ms maximums and 100 microsecond gaps. The remaining frame time is allocated for the sync pulse. You can read more about how CPPM signals work [here](https://www.youtube.com/watch?v=sEChFDRf8Ek) and [here](https://sourceforge.net/p/arduinorclib/ ... %20Signal/). To generate the CPPM signal, we use the [pigpio library](https://github.com/joan2937/pigpio/tree/master). Thanks to [Joan](https://github.com/joan2937) for the support.
 
 # Troubleshooting
 
