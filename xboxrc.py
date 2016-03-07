@@ -63,30 +63,26 @@ class XboxRC():
 		self.button_states = {}
 		self.axis_map = []
 		self.button_map = []
-		self.eventStates = {}
+		self.eventStates = {xboxrc_capnp.Xbox.EventField.ly: (xboxrc_capnp.Xbox.EventType.axis,0), xboxrc_capnp.Xbox.EventField.lx: (xboxrc_capnp.Xbox.EventType.axis,0), xboxrc_capnp.Xbox.EventField.ry: (xboxrc_capnp.Xbox.EventType.axis,1000), xboxrc_capnp.Xbox.EventField.rx: (xboxrc_capnp.Xbox.EventType.axis,1000)}
 		
 		self.mode = self.modes["manual"]
 		self.submode = self.submodes["idle"]
 
 		self.channels = [1500,1500,1500,1500,self.mode,self.submode,0,0] # throttle, yaw, pitch, roll, mode, submode, 0, 0
 
-		# if self.useQuack:
-		# 	self.quack = __import__('quack')
-		# 	self.ctx = self.quack.Node("xboxrc")
-		# 	self.pub = self.quack.Publisher(self.ctx, "XBOX/RAW", [])
-		# 	self.logger = self.ctx.logger
-
+		# open the serial device
 		self.openXboxDevice()
 
+		self.ppm = PPM(18)
+		self.ppm.start() # starts a separate thread
+
+		# spawn the read thread
 		self.thread = threading.Thread(name='xpad', target=self.readXboxDevice)
 		self.thread.daemon = True
 		self.thread.start()
 
 		#self.printEventStates()
-		self.printChannels()
-
-		self.ppm = PPM(6)
-		self.ppm.start() # starts a separate thread
+		self.printChannels(0.5)
 		
 	def detectXboxDevices(self):
 		# Iterate over the joystick devices.
@@ -124,7 +120,6 @@ class XboxRC():
 		buf = array.array('B', [0])
 		ioctl(self.jsdev, 0x80016a12, buf) # JSIOCGBUTTONS
 		num_buttons = buf[0]
-		print("num buttons {}".format(num_buttons))
 
 		# Get the axis map.
 		buf = array.array('B', [0] * 0x40)
@@ -208,7 +203,9 @@ class XboxRC():
 				self.eventStates[eventField] = (eventType, eventValue)
 				# feed the mode and submode fsm's
 				self.updateModes(eventField, eventValue)
-				#self.logger.info("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
+				
+				self.logger.debug("Type: {} Field: {} Value: {}".format(eventType, eventField, eventValue))
+				
 				# run the channels updater on every value
 				self.updateChannels()
 
@@ -216,8 +213,7 @@ class XboxRC():
 					self.sendEvent(eventType, eventField, eventValue)
 
 	def updateChannels(self):
-		if len(self.eventStates) < 10:
-			return False
+
 		def convertInt(val):
 			return ((val / 32768.0) * 500) + 1500
 		def convertBool(val):
@@ -270,30 +266,26 @@ class XboxRC():
 	# 	self.printEventStatesTimer = Timer(1,self.printEventStates)
 	# 	self.printEventStatesTimer.start()
 
-	def printChannels(self):
+	def printChannels(self, delay_s):
 		if self.updateChannels():
+			s = "CH: "
 			for i,ch in enumerate(self.channels):
-                       		self.logger.info("Ch{}: {}".format(i,ch))
-                	self.logger.info("")
-		self.printChannelsTimer = Timer(1,self.printChannels)
+				s += str(i) + ":" + str(ch) + " "
+			self.logger.info(s)
+		self.printChannelsTimer = Timer(delay_s,self.printChannels,args=(delay_s,))
 		self.printChannelsTimer.start()
 
-	# def sendEvent(self, eventType, eventField, eventValue):
-	# 	msg = xboxrc_capnp.Xbox.new_message()
-	# 	msg.timestamp = int(time.time() * 1000000) # microsecond
-	# 	msg.type = eventType
-	# 	msg.field = eventField
-	# 	msg.value = eventValue
-	# 	self.pub.send(msg)
-
 	def signal_handler(self, signal, frame):
-		self.logger.info("Exiting...")
+		self.logger.info("Shutting down...")
 		self.ppm.stop()
 		self.shouldExit = True
 		try: self.printChannelsTimer.cancel()
 		except: pass
-		#try: self.printEventStatesTimer.cancel()
-		#except: pass
+		time.sleep(1)
+		# try: self.printEventStatesTimer.cancel()
+		# except: pass
+		self.logger.info("Done")
+		sys.exit(0)
 
 if __name__ == '__main__':
 	rc = XboxRC(False)
