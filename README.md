@@ -23,6 +23,8 @@ Other hardware controllers and transmitter modules (e.g, Orange) may be compatib
 - sudo modprobe xpad
 - cd ~/ && wget abyz.co.uk/rpi/pigpio/pigpio.zip && unzip pigpio.zip
 - cd PIGPIO && make && sudo make install && rm ../pigpio.zip
+- set GPIO 18 as PWM0 using: raspi-gpio set 18 a5
+- verify GPIO 18 is set using: raspi-gpio get
 
 # About
 
