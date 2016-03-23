@@ -32,19 +32,18 @@ The XboxOne controller transmits joystick and button data over a USB connection 
 
 Stick commands and buttons are mapped to specific actions. Since there are no switches an internal state machine manages the active mode and submode (ch 5 and 6). The stick commands are mapped to the normal commands for manual / altitude assist / position assist modes. Buttons are mapped as follows:
 
+dpad_up: manual
+dpad_right: altitude assist
+dpad_down: position assist
+dpad_left: auto
 
-X: 
+left button: return (requires mods in px4)
+right button: failsafe (requires mods in px4)
+X: launch (requires mods in px4)
+Y: land (requires mods in px4)
+B: offboard
 
-Y: 
-
-A:
-
-B:
-
-Left button:
-
-Right button:
-
+Note that some of these mods must be mapped internally in the px4 firmware. The dpad modes are supported directly by px4 already, but there aren't currently any ways to map launch, land and failsafe modes to RC inputs without some modifications in px4. This work is still in progress.
 
 The FrSky DHT transmitter module expects a CPPM signal from the pi with a 27ms frame length. This allows us to combine the 8 channels with 1ms minimums, 2ms maximums and 100 microsecond gaps. The remaining frame time is allocated for the sync pulse. You can read more about how CPPM signals work [here](https://www.youtube.com/watch?v=sEChFDRf8Ek) and [here](https://sourceforge.net/p/arduinorclib/ ... %20Signal/). To generate the CPPM signal, we use the [pigpio library](https://github.com/joan2937/pigpio/tree/master). Thanks to [Joan](https://github.com/joan2937) for the support.
 
